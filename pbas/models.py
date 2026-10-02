@@ -24,6 +24,7 @@ class TeachingEntry(models.Model):
     from_date = models.DateField(null=True, blank=True)
     to_date = models.DateField(null=True, blank=True)
     description = models.TextField(blank=True, null=True)
+    supporting_image = models.ImageField(upload_to='pbas/teaching/', blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
