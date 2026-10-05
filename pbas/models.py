@@ -25,7 +25,18 @@ class TeachingEntry(models.Model):
     to_date = models.DateField(null=True, blank=True)
     description = models.TextField(blank=True, null=True)
     supporting_image = models.ImageField(upload_to='pbas/teaching/', blank=True, null=True)
+    score = models.FloatField(default=0.0)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def calculate_score(self):
+        if self.classes_assigned and self.classes_assigned > 0:
+            percentage = min(1.0, float(self.classes_taught) / float(self.classes_assigned))
+            return round(percentage * 25.0, 2)
+        return 0.0
+
+    def save(self, *args, **kwargs):
+        self.score = self.calculate_score()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.course_name} ({self.academic_year})"
@@ -39,9 +50,19 @@ class StudentSupportEntry(models.Model):
     target_audience = models.CharField(max_length=255)
     hours_spent = models.IntegerField()
     supporting_image = models.ImageField(upload_to='pbas/student_support/', blank=True, null=True)
+    score = models.FloatField(default=0.0)
     from_date = models.DateField(null=True, blank=True)
     to_date = models.DateField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def calculate_score(self):
+        if self.hours_spent:
+            return min(15.0, round(float(self.hours_spent) / 5.0, 2))
+        return 0.0
+
+    def save(self, *args, **kwargs):
+        self.score = self.calculate_score()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.activity_name} ({self.academic_year})"
@@ -64,10 +85,26 @@ class ResearchEntry(models.Model):
     journal_or_funding = models.CharField(max_length=500, help_text="Journal name or Funding agency")
     status_or_impact = models.CharField(max_length=100, help_text="Impact Factor, Status (Ongoing/Completed), etc.")
     supporting_image = models.ImageField(upload_to='pbas/research/', blank=True, null=True)
+    score = models.FloatField(default=0.0)
     from_date = models.DateField(null=True, blank=True)
     to_date = models.DateField(null=True, blank=True)
     description = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def calculate_score(self):
+        weights = {
+            'Journal': 25.0,
+            'Conference': 10.0,
+            'Project': 20.0,
+            'Guidance': 15.0,
+            'Patent': 30.0,
+            'Book': 20.0,
+        }
+        return weights.get(self.research_type, 10.0)
+
+    def save(self, *args, **kwargs):
+        self.score = self.calculate_score()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.research_type}: {self.title[:50]}..."
@@ -94,7 +131,23 @@ class AcademicContribution(models.Model):
     to_date = models.DateField(null=True, blank=True)
     description = models.TextField(blank=True, null=True)
     supporting_image = models.ImageField(upload_to='pbas/academic/', blank=True, null=True)
+    score = models.FloatField(default=0.0)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def calculate_score(self):
+        weights = {
+            'Invited Lecture': 5.0,
+            'Resource Person': 5.0,
+            'Paper Presentation': 5.0,
+            'Award/Fellowship': 10.0,
+            'Policy Document': 10.0,
+            'Other': 3.0,
+        }
+        return weights.get(self.contribution_type, 3.0)
+
+    def save(self, *args, **kwargs):
+        self.score = self.calculate_score()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.contribution_type}: {self.title[:50]}..."
@@ -116,9 +169,25 @@ class InstitutionalResponsibility(models.Model):
     position = models.CharField(max_length=255)
     description = models.TextField()
     supporting_image = models.ImageField(upload_to='pbas/institutional/', blank=True, null=True)
+    score = models.FloatField(default=0.0)
     from_date = models.DateField(null=True, blank=True)
     to_date = models.DateField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def calculate_score(self):
+        weights = {
+            'Administrative': 10.0,
+            'Committee': 5.0,
+            'Examination': 5.0,
+            'Admission': 5.0,
+            'Student Welfare': 5.0,
+            'Other': 3.0,
+        }
+        return weights.get(self.responsibility_type, 3.0)
+
+    def save(self, *args, **kwargs):
+        self.score = self.calculate_score()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.responsibility_type}: {self.position}"

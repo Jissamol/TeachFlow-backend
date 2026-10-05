@@ -4,10 +4,12 @@ from .views import (
     StudentSupportListCreateView, StudentSupportDetailView,
     ResearchListCreateView, ResearchDetailView,
     AcademicContributionListCreateView, AcademicContributionDetailView,
-    InstitutionalResponsibilityListCreateView, InstitutionalResponsibilityDetailView
+    InstitutionalResponsibilityListCreateView, InstitutionalResponsibilityDetailView,
+    PBASSummaryView
 )
 
 urlpatterns = [
+    path('summary/', PBASSummaryView.as_view(), name='pbas-summary'),
     path('teaching/', TeachingEntryListCreateView.as_view(), name='teaching-list-create'),
     path('teaching/<int:pk>/', TeachingEntryDetailView.as_view(), name='teaching-detail'),
     path('student-support/', StudentSupportListCreateView.as_view(), name='student-support-list-create'),
