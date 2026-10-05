@@ -1,5 +1,26 @@
 from rest_framework import serializers
-from .models import TeachingEntry
+from .models import (
+    TeachingEntry, StudentSupportEntry, ResearchEntry, 
+    AcademicContribution, InstitutionalResponsibility,
+    ScoringRule, AppraisalPeriod, ActivityEvidence
+)
+
+class ScoringRuleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ScoringRule
+        fields = '__all__'
+
+class AppraisalPeriodSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AppraisalPeriod
+        fields = '__all__'
+        read_only_fields = ['user', 'created_at', 'updated_at']
+
+class ActivityEvidenceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ActivityEvidence
+        fields = '__all__'
+        read_only_fields = ['user', 'upload_date']
 
 class TeachingEntrySerializer(serializers.ModelSerializer):
     class Meta:
@@ -7,10 +28,7 @@ class TeachingEntrySerializer(serializers.ModelSerializer):
         fields = '__all__'
         read_only_fields = ['user', 'created_at']
 
-from .models import StudentSupportEntry, ResearchEntry, AcademicContribution, InstitutionalResponsibility
-
 class StudentSupportSerializer(serializers.ModelSerializer):
-    # ... (no change)
     class Meta:
         model = StudentSupportEntry
         fields = '__all__'
