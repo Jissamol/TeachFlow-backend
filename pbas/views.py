@@ -1,13 +1,73 @@
 from rest_framework import generics, permissions
-from .models import TeachingEntry
-from .serializers import TeachingEntrySerializer
+from .models import (
+    TeachingEntry, StudentSupportEntry, ResearchEntry, 
+    AcademicContribution, InstitutionalResponsibility,
+    ScoringRule, AppraisalPeriod, ActivityEvidence
+)
+from .serializers import (
+    TeachingEntrySerializer, StudentSupportSerializer, ResearchSerializer, 
+    AcademicContributionSerializer, InstitutionalResponsibilitySerializer,
+    ScoringRuleSerializer, AppraisalPeriodSerializer, ActivityEvidenceSerializer
+)
+
+class ScoringRuleListCreateView(generics.ListCreateAPIView):
+    queryset = ScoringRule.objects.all()
+    serializer_class = ScoringRuleSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+class ScoringRuleDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = ScoringRule.objects.all()
+    serializer_class = ScoringRuleSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+class AppraisalPeriodListCreateView(generics.ListCreateAPIView):
+    serializer_class = AppraisalPeriodSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return AppraisalPeriod.objects.filter(user=self.request.user).order_by('-created_at')
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+class AppraisalPeriodDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = AppraisalPeriodSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return AppraisalPeriod.objects.filter(user=self.request.user)
+
+class ActivityEvidenceListCreateView(generics.ListCreateAPIView):
+    serializer_class = ActivityEvidenceSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        qs = ActivityEvidence.objects.filter(user=self.request.user).order_by('-upload_date')
+        year = self.request.query_params.get('academic_year')
+        if year:
+            qs = qs.filter(academic_year=year)
+        return qs
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+class ActivityEvidenceDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = ActivityEvidenceSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return ActivityEvidence.objects.filter(user=self.request.user)
 
 class TeachingEntryListCreateView(generics.ListCreateAPIView):
     serializer_class = TeachingEntrySerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return TeachingEntry.objects.filter(user=self.request.user).order_by('-created_at')
+        qs = TeachingEntry.objects.filter(user=self.request.user).order_by('-created_at')
+        year = self.request.query_params.get('academic_year')
+        if year:
+            qs = qs.filter(academic_year=year)
+        return qs
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
@@ -19,16 +79,16 @@ class TeachingEntryDetailView(generics.RetrieveUpdateDestroyAPIView):
     def get_queryset(self):
         return TeachingEntry.objects.filter(user=self.request.user)
 
-from .models import StudentSupportEntry, ResearchEntry, AcademicContribution, InstitutionalResponsibility
-from .serializers import StudentSupportSerializer, ResearchSerializer, AcademicContributionSerializer, InstitutionalResponsibilitySerializer
-
 class StudentSupportListCreateView(generics.ListCreateAPIView):
-    # ... (no change in body)
     serializer_class = StudentSupportSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return StudentSupportEntry.objects.filter(user=self.request.user).order_by('-created_at')
+        qs = StudentSupportEntry.objects.filter(user=self.request.user).order_by('-created_at')
+        year = self.request.query_params.get('academic_year')
+        if year:
+            qs = qs.filter(academic_year=year)
+        return qs
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
@@ -45,7 +105,11 @@ class ResearchListCreateView(generics.ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return ResearchEntry.objects.filter(user=self.request.user).order_by('-created_at')
+        qs = ResearchEntry.objects.filter(user=self.request.user).order_by('-created_at')
+        year = self.request.query_params.get('academic_year')
+        if year:
+            qs = qs.filter(academic_year=year)
+        return qs
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
@@ -62,7 +126,11 @@ class AcademicContributionListCreateView(generics.ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return AcademicContribution.objects.filter(user=self.request.user).order_by('-created_at')
+        qs = AcademicContribution.objects.filter(user=self.request.user).order_by('-created_at')
+        year = self.request.query_params.get('academic_year')
+        if year:
+            qs = qs.filter(academic_year=year)
+        return qs
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
@@ -79,7 +147,11 @@ class InstitutionalResponsibilityListCreateView(generics.ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return InstitutionalResponsibility.objects.filter(user=self.request.user).order_by('-created_at')
+        qs = InstitutionalResponsibility.objects.filter(user=self.request.user).order_by('-created_at')
+        year = self.request.query_params.get('academic_year')
+        if year:
+            qs = qs.filter(academic_year=year)
+        return qs
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
@@ -100,20 +172,34 @@ class PBASSummaryView(APIView):
 
     def get(self, request):
         user = request.user
-        academic_year = request.query_params.get('academic_year')
+        academic_year = request.query_params.get('academic_year', 'All')
+
+        appraisal, created = AppraisalPeriod.objects.get_or_create(
+            user=user,
+            academic_year=academic_year if academic_year != 'All' else '2025-2026',
+            defaults={
+                'title': f"{academic_year} Annual Appraisal",
+                'target_score': 300.0,
+                'status': 'Draft'
+            }
+        )
 
         teaching_qs = TeachingEntry.objects.filter(user=user)
         support_qs = StudentSupportEntry.objects.filter(user=user)
         research_qs = ResearchEntry.objects.filter(user=user)
         academic_qs = AcademicContribution.objects.filter(user=user)
         institutional_qs = InstitutionalResponsibility.objects.filter(user=user)
+        evidence_qs = ActivityEvidence.objects.filter(user=user)
 
-        if academic_year:
-            teaching_qs = teaching_qs.filter(academic_year=academic_year)
-            support_qs = support_qs.filter(academic_year=academic_year)
-            research_qs = research_qs.filter(academic_year=academic_year)
-            academic_qs = academic_qs.filter(academic_year=academic_year)
-            institutional_qs = institutional_qs.filter(academic_year=academic_year)
+        if academic_year and academic_year != 'All':
+            year_prefix = academic_year.split('-')[0]
+            year_filter = Q(academic_year=academic_year) | Q(academic_year__startswith=year_prefix)
+            teaching_qs = teaching_qs.filter(year_filter)
+            support_qs = support_qs.filter(year_filter)
+            research_qs = research_qs.filter(year_filter)
+            academic_qs = academic_qs.filter(year_filter)
+            institutional_qs = institutional_qs.filter(year_filter)
+            evidence_qs = evidence_qs.filter(year_filter)
 
         teaching_score = round(teaching_qs.aggregate(Sum('score'))['score__sum'] or 0.0, 2)
         support_score = round(support_qs.aggregate(Sum('score'))['score__sum'] or 0.0, 2)
@@ -122,7 +208,7 @@ class PBASSummaryView(APIView):
         institutional_score = round(institutional_qs.aggregate(Sum('score'))['score__sum'] or 0.0, 2)
 
         total_score = round(teaching_score + support_score + research_score + academic_score + institutional_score, 2)
-        annual_target = 150.0
+        annual_target = appraisal.target_score
         target_percentage = min(100.0, round((total_score / annual_target) * 100, 1))
 
         # Evidence Health Analysis
@@ -142,24 +228,38 @@ class PBASSummaryView(APIView):
         i_evidence = institutional_qs.exclude(Q(supporting_image='') | Q(supporting_image__isnull=True)).count()
 
         total_entries = t_total + s_total + r_total + a_total + i_total
-        entries_with_evidence = t_evidence + s_evidence + r_evidence + a_evidence + i_evidence
-        evidence_percentage = round((entries_with_evidence / total_entries * 100), 1) if total_entries > 0 else 100.0
+        entries_with_evidence = t_evidence + s_evidence + r_evidence + a_evidence + i_evidence + evidence_qs.count()
+        evidence_percentage = min(100.0, round((entries_with_evidence / max(1, total_entries) * 100), 1)) if total_entries > 0 else 100.0
+
+        rules = ScoringRule.objects.all()
+        rules_list = [{'activity_type': r.activity_type, 'points': r.points_per_unit, 'is_per_hour': r.is_per_hour} for r in rules]
 
         return Response({
+            'academic_year': academic_year,
+            'appraisal_period': {
+                'id': appraisal.id,
+                'title': appraisal.title,
+                'status': appraisal.status,
+                'target_score': appraisal.target_score,
+                'period_start': appraisal.period_start,
+                'period_end': appraisal.period_end,
+            },
             'annual_target': annual_target,
             'total_score': total_score,
             'target_percentage': target_percentage,
             'category_scores': {
-                'teaching': {'score': teaching_score, 'max': 25.0, 'count': t_total},
-                'student_support': {'score': support_score, 'max': 15.0, 'count': s_total},
-                'research': {'score': research_score, 'max': 60.0, 'count': r_total},
-                'academic_contributions': {'score': academic_score, 'max': 25.0, 'count': a_total},
-                'institutional_responsibilities': {'score': institutional_score, 'max': 25.0, 'count': i_total},
+                'teaching': {'score': teaching_score, 'count': t_total},
+                'student_support': {'score': support_score, 'count': s_total},
+                'research': {'score': research_score, 'count': r_total},
+                'academic_contributions': {'score': academic_score, 'count': a_total},
+                'institutional_responsibilities': {'score': institutional_score, 'count': i_total},
             },
             'evidence_health': {
                 'total_entries': total_entries,
                 'entries_with_evidence': entries_with_evidence,
                 'evidence_percentage': evidence_percentage,
-            }
+                'total_evidence_files': evidence_qs.count()
+            },
+            'scoring_rules': rules_list
         })
 

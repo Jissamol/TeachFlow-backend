@@ -5,11 +5,20 @@ from .views import (
     ResearchListCreateView, ResearchDetailView,
     AcademicContributionListCreateView, AcademicContributionDetailView,
     InstitutionalResponsibilityListCreateView, InstitutionalResponsibilityDetailView,
-    PBASSummaryView
+    PBASSummaryView,
+    ScoringRuleListCreateView, ScoringRuleDetailView,
+    AppraisalPeriodListCreateView, AppraisalPeriodDetailView,
+    ActivityEvidenceListCreateView, ActivityEvidenceDetailView
 )
 
 urlpatterns = [
     path('summary/', PBASSummaryView.as_view(), name='pbas-summary'),
+    path('rules/', ScoringRuleListCreateView.as_view(), name='rules-list-create'),
+    path('rules/<int:pk>/', ScoringRuleDetailView.as_view(), name='rules-detail'),
+    path('appraisal-period/', AppraisalPeriodListCreateView.as_view(), name='appraisal-period-list-create'),
+    path('appraisal-period/<int:pk>/', AppraisalPeriodDetailView.as_view(), name='appraisal-period-detail'),
+    path('evidence/', ActivityEvidenceListCreateView.as_view(), name='evidence-list-create'),
+    path('evidence/<int:pk>/', ActivityEvidenceDetailView.as_view(), name='evidence-detail'),
     path('teaching/', TeachingEntryListCreateView.as_view(), name='teaching-list-create'),
     path('teaching/<int:pk>/', TeachingEntryDetailView.as_view(), name='teaching-detail'),
     path('student-support/', StudentSupportListCreateView.as_view(), name='student-support-list-create'),
