@@ -262,7 +262,14 @@ class PBASSummaryView(APIView):
                 'total_entries': total_entries,
                 'entries_with_evidence': entries_with_evidence,
                 'evidence_percentage': evidence_percentage,
-                'total_evidence_files': evidence_qs.count()
+                'total_evidence_files': evidence_qs.count(),
+                'category_breakdown': {
+                    'teaching': {'verified': t_evidence, 'missing': max(0, t_total - t_evidence)},
+                    'student_support': {'verified': s_evidence, 'missing': max(0, s_total - s_evidence)},
+                    'research': {'verified': r_evidence, 'missing': max(0, r_total - r_evidence)},
+                    'academic': {'verified': a_evidence, 'missing': max(0, a_total - a_evidence)},
+                    'institutional': {'verified': i_evidence, 'missing': max(0, i_total - i_evidence)},
+                }
             },
             'scoring_rules': rules_list
         })
