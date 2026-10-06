@@ -1,14 +1,18 @@
 from rest_framework import generics, permissions
+from rest_framework.views import APIView
+from rest_framework.response import Response
 from .models import (
     TeachingEntry, StudentSupportEntry, ResearchEntry, 
     AcademicContribution, InstitutionalResponsibility,
-    ScoringRule, AppraisalPeriod, ActivityEvidence
+    ScoringRule, AppraisalPeriod, ActivityEvidence, Notification
 )
 from .serializers import (
     TeachingEntrySerializer, StudentSupportSerializer, ResearchSerializer, 
     AcademicContributionSerializer, InstitutionalResponsibilitySerializer,
-    ScoringRuleSerializer, AppraisalPeriodSerializer, ActivityEvidenceSerializer
+    ScoringRuleSerializer, AppraisalPeriodSerializer, ActivityEvidenceSerializer,
+    NotificationSerializer
 )
+
 
 class ScoringRuleListCreateView(generics.ListCreateAPIView):
     queryset = ScoringRule.objects.all()
@@ -262,4 +266,109 @@ class PBASSummaryView(APIView):
             },
             'scoring_rules': rules_list
         })
+
+
+class NotificationListCreateView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def sync_system_notifications(self, user):
+        # 1. Incomplete Evidence Notification
+        t_missing = TeachingEntry.objects.filter(user=user, supporting_image__in=['', None]).count()
+        s_missing = StudentSupportEntry.objects.filter(user=user, supporting_image__in=['', None]).count()
+        r_missing = ResearchEntry.objects.filter(user=user, supporting_image__in=['', None]).count()
+        a_missing = AcademicContribution.objects.filter(user=user, supporting_image__in=['', None]).count()
+        i_missing = InstitutionalResponsibility.objects.filter(user=user, supporting_image__in=['', None]).count()
+        missing_count = t_missing + s_missing + r_missing + a_missing + i_missing
+
+        if missing_count > 0:
+            Notification.objects.update_or_create(
+                user=user,
+                notification_type='Evidence',
+                defaults={
+                    'title': 'Incomplete evidence',
+                    'message': f'{missing_count} activities are missing supporting documents.',
+                    'icon': '🔔',
+                    'action_url': '/pbas/evidence'
+                }
+            )
+
+        # 2. Goal Progress Notification
+        t_score = sum(e.score for e in TeachingEntry.objects.filter(user=user))
+        s_score = sum(e.score for e in StudentSupportEntry.objects.filter(user=user))
+        r_score = sum(e.score for e in ResearchEntry.objects.filter(user=user))
+        a_score = sum(e.score for e in AcademicContribution.objects.filter(user=user))
+        i_score = sum(e.score for e in InstitutionalResponsibility.objects.filter(user=user))
+        total_score = round(t_score + s_score + r_score + a_score + i_score, 2)
+        target = 300.0
+        pct = min(100, int((total_score / target) * 100))
+
+        Notification.objects.update_or_create(
+            user=user,
+            notification_type='Goal',
+            defaults={
+                'title': 'Goal progress',
+                'message': f'You have completed {pct}% of your annual research target.',
+                'icon': '🔔',
+                'action_url': '/pbas/dashboard'
+            }
+        )
+
+        # 3. Appraisal Deadline Approaching Notification
+        Notification.objects.get_or_create(
+            user=user,
+            notification_type='Deadline',
+            defaults={
+                'title': 'Appraisal deadline approaching',
+                'message': 'Your 2025–26 appraisal submission deadline is in 7 days.',
+                'icon': '🔔',
+                'action_url': '/pbas/reports'
+            }
+        )
+
+    def get(self, request):
+        self.sync_system_notifications(request.user)
+        notifications = Notification.objects.filter(user=request.user)
+        serializer = NotificationSerializer(notifications, many=True)
+        unread_count = notifications.filter(is_read=False).count()
+        return Response({
+            'notifications': serializer.data,
+            'unread_count': unread_count
+        })
+
+    def post(self, request):
+        serializer = NotificationSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(user=request.user)
+            return Response(serializer.data, status=201)
+        return Response(serializer.errors, status=400)
+
+
+class NotificationMarkReadView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def patch(self, request, pk):
+        try:
+            notif = Notification.objects.get(pk=pk, user=request.user)
+            notif.is_read = True
+            notif.save()
+            return Response({'status': 'marked read'})
+        except Notification.DoesNotExist:
+            return Response({'error': 'Not found'}, status=404)
+
+
+class NotificationMarkAllReadView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        Notification.objects.filter(user=request.user).update(is_read=True)
+        return Response({'status': 'all marked read'})
+
+
+class NotificationDetailView(generics.RetrieveDestroyAPIView):
+    serializer_class = NotificationSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Notification.objects.filter(user=self.request.user)
+
 

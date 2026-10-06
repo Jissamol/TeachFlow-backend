@@ -251,3 +251,28 @@ class InstitutionalResponsibility(models.Model):
 
     def __str__(self):
         return f"{self.responsibility_type}: {self.position}"
+
+
+class Notification(models.Model):
+    NOTIFICATION_TYPES = [
+        ('Deadline', 'Appraisal Deadline'),
+        ('Evidence', 'Incomplete Evidence'),
+        ('Goal', 'Goal Progress'),
+        ('General', 'General Notification'),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')
+    title = models.CharField(max_length=255)
+    message = models.TextField()
+    notification_type = models.CharField(max_length=20, choices=NOTIFICATION_TYPES, default='General')
+    icon = models.CharField(max_length=20, default='🔔')
+    is_read = models.BooleanField(default=False)
+    action_url = models.CharField(max_length=255, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.user.email} - {self.title}"
+
