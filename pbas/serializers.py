@@ -2,10 +2,17 @@ from rest_framework import serializers
 from .models import (
     TeachingEntry, StudentSupportEntry, ResearchEntry, 
     AcademicContribution, InstitutionalResponsibility,
-    ScoringRule, AppraisalPeriod, ActivityEvidence
+    ScoringRule, AppraisalPeriod, ActivityEvidence, Notification
 )
 
+class NotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Notification
+        fields = '__all__'
+        read_only_fields = ['user', 'created_at']
+
 class ScoringRuleSerializer(serializers.ModelSerializer):
+
     class Meta:
         model = ScoringRule
         fields = '__all__'

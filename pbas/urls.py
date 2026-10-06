@@ -8,10 +8,16 @@ from .views import (
     PBASSummaryView,
     ScoringRuleListCreateView, ScoringRuleDetailView,
     AppraisalPeriodListCreateView, AppraisalPeriodDetailView,
-    ActivityEvidenceListCreateView, ActivityEvidenceDetailView
+    ActivityEvidenceListCreateView, ActivityEvidenceDetailView,
+    NotificationListCreateView, NotificationDetailView,
+    NotificationMarkReadView, NotificationMarkAllReadView
 )
 
 urlpatterns = [
+    path('notifications/', NotificationListCreateView.as_view(), name='notification-list-create'),
+    path('notifications/<int:pk>/', NotificationDetailView.as_view(), name='notification-detail'),
+    path('notifications/<int:pk>/mark-read/', NotificationMarkReadView.as_view(), name='notification-mark-read'),
+    path('notifications/mark-all-read/', NotificationMarkAllReadView.as_view(), name='notification-mark-all-read'),
     path('summary/', PBASSummaryView.as_view(), name='pbas-summary'),
     path('rules/', ScoringRuleListCreateView.as_view(), name='rules-list-create'),
     path('rules/<int:pk>/', ScoringRuleDetailView.as_view(), name='rules-detail'),
@@ -30,3 +36,4 @@ urlpatterns = [
     path('institutional-responsibilities/', InstitutionalResponsibilityListCreateView.as_view(), name='institutional-responsibility-list-create'),
     path('institutional-responsibilities/<int:pk>/', InstitutionalResponsibilityDetailView.as_view(), name='institutional-responsibility-detail'),
 ]
+
