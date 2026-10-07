@@ -10,10 +10,12 @@ from .views import (
     AppraisalPeriodListCreateView, AppraisalPeriodDetailView,
     ActivityEvidenceListCreateView, ActivityEvidenceDetailView,
     NotificationListCreateView, NotificationDetailView,
-    NotificationMarkReadView, NotificationMarkAllReadView
+    NotificationMarkReadView, NotificationMarkAllReadView,
+    CalendarEventsView
 )
 
 urlpatterns = [
+    path('calendar/', CalendarEventsView.as_view(), name='calendar-events'),
     path('notifications/', NotificationListCreateView.as_view(), name='notification-list-create'),
     path('notifications/<int:pk>/', NotificationDetailView.as_view(), name='notification-detail'),
     path('notifications/<int:pk>/mark-read/', NotificationMarkReadView.as_view(), name='notification-mark-read'),
