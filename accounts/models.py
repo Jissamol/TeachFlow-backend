@@ -51,6 +51,9 @@ class User(AbstractBaseUser, PermissionsMixin):
     department = models.CharField(max_length=50, choices=DEPARTMENT_CHOICES)
     phone = models.CharField(max_length=10)
     profile_picture = models.ImageField(upload_to='profile_pics/', null=True, blank=True)
+    orcid = models.CharField(max_length=100, null=True, blank=True)
+    research_interests = models.TextField(null=True, blank=True)
+    designation = models.CharField(max_length=150, null=True, blank=True)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)      # needed for admin
     is_superuser = models.BooleanField(default=False)  # needed for permissions
